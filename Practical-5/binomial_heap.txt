@@ -1,0 +1,248 @@
+class BinomialNode:
+    def _init_(self, key):
+        self.key = key
+        self.degree = 0
+        self.parent = None
+        self.child = None
+        self.sibling = None
+
+    def _repr_(self):
+        return f"Node({self.key}, deg={self.degree})"
+
+
+class BinomialHeap:
+    def _init_(self):
+        self.head = None
+
+    @staticmethod
+    def _merge_root_lists(h1, h2):
+        if not h1:
+            return h2
+        if not h2:
+            return h1
+        head = None
+        tail = None
+        a = h1
+        b = h2
+        while a and b:
+            if a.degree <= b.degree:
+                node = a
+                a = a.sibling
+            else:
+                node = b
+                b = b.sibling
+            if not head:
+                head = node
+                tail = node
+            else:
+                tail.sibling = node
+                tail = node
+        rest = a if a else b
+        if tail:
+            tail.sibling = rest
+        else:
+            head = rest
+        return head
+
+    @staticmethod
+    def _binomial_link(y, x):
+        y.parent = x
+        y.sibling = x.child
+        x.child = y
+        x.degree += 1
+
+    def merge(self, other):
+        new_head = self._merge_root_lists(self.head, other.head)
+        if new_head is None:
+            self.head = None
+            return
+        prev = None
+        curr = new_head
+        nxt = curr.sibling
+
+        while nxt:
+            if curr.degree != nxt.degree or (nxt.sibling and nxt.sibling.degree == curr.degree):
+                prev = curr
+                curr = nxt
+            else:
+                if curr.key <= nxt.key:
+                    curr.sibling = nxt.sibling
+                    self._binomial_link(nxt, curr)
+                else:
+                    if prev:
+                        prev.sibling = nxt
+                    else:
+                        new_head = nxt
+                    self._binomial_link(curr, nxt)
+                    curr = nxt
+            nxt = curr.sibling
+
+        self.head = new_head
+        other.head = None
+
+    def insert(self, key):
+        node = BinomialNode(key)
+        new_heap = BinomialHeap()
+        new_heap.head = node
+        self.merge(new_heap)
+        return node
+
+    def _find_min_root(self):
+        if not self.head:
+            return None, None
+        prev_min = None
+        min_node = self.head
+        prev = None
+        curr = self.head
+        while curr:
+            if curr.key < min_node.key:
+                min_node = curr
+                prev_min = prev
+            prev = curr
+            curr = curr.sibling
+        return prev_min, min_node
+
+    def get_min(self):
+        if not self.head:
+            return None
+        _, min_node = self._find_min_root()
+        return min_node.key if min_node else None
+
+    def extract_min(self):
+        if not self.head:
+            return None
+        prev_min, min_node = self._find_min_root()
+        if min_node is None:
+            return None
+        if prev_min:
+            prev_min.sibling = min_node.sibling
+        else:
+            self.head = min_node.sibling
+        child = min_node.child
+        new_head = None
+        while child:
+            next_child = child.sibling
+            child.sibling = new_head
+            child.parent = None
+            new_head = child
+            child = next_child
+        new_heap = BinomialHeap()
+        new_heap.head = new_head
+        self.merge(new_heap)
+        return min_node.key
+
+    def decrease_key(self, node, new_key):
+        if new_key > node.key:
+            raise ValueError("new key is greater than current key")
+        node.key = new_key
+        cur = node
+        parent = cur.parent
+        while parent and cur.key < parent.key:
+            cur.key, parent.key = parent.key, cur.key
+            cur = parent
+            parent = cur.parent
+
+    def delete(self, node):
+        self.decrease_key(node, float("-inf"))
+        self.extract_min()
+
+    def _find_node_dfs(self, root, key):
+        node = root
+        stack = []
+        while node or stack:
+            if node:
+                if node.key == key:
+                    return node
+                if node.sibling:
+                    stack.append(node.sibling)
+                node = node.child
+            else:
+                node = stack.pop()
+        return None
+
+    def find(self, key):
+        return self._find_node_dfs(self.head, key)
+
+    def is_empty(self):
+        return self.head is None
+
+    def _print_tree(self, root, indent=0):
+        node = root
+        while node:
+            print(" " * indent + f"{node.key} (deg={node.degree})")
+            if node.child:
+                self._print_tree(node.child, indent + 4)
+            node = node.sibling
+
+    def print_heap(self):
+        print("Binomial Heap:")
+        if not self.head:
+            print("  [empty]")
+        else:
+            self._print_tree(self.head)
+
+
+if _name_ == "_main_":
+    bh = BinomialHeap()
+    nodes = {}
+
+    while True:
+        print("\nBinomial Heap Functions :")
+        print("1. Insert")
+        print("2. Get min")
+        print("3. Extract min")
+        print("4. Find node")
+        print("5. Decrease key")
+        print("6. Delete node")
+        print("7. Exit")
+
+        choice = input("Enter your choice (1-8): ")
+
+        match choice:
+            case "1":
+                key = int(input("Enter key to insert: "))
+                node = bh.insert(key)
+                nodes[key] = node
+                print(f"Inserted {key}")
+                bh.print_heap()
+            case "2":
+                print("Minimum:", bh.get_min())
+            case "3":
+                val = bh.extract_min()
+                if val is not None:
+                    print("Extracted min:", val)
+                    if val in nodes:
+                        del nodes[val]
+                        bh.print_heap()
+                else:
+                    print("Heap is empty")
+            case "4":
+                key = int(input("Enter key to find: "))
+                node = bh.find(key)
+                print("Found" if node else "Not found")
+            case "5":
+                key = int(input("Enter current key: "))
+                if key not in nodes:
+                    print("Key not found in heap")
+                else:
+                    new_key = int(input("Enter new smaller key: "))
+                    bh.decrease_key(nodes[key], new_key)
+                    nodes[new_key] = nodes.pop(key)
+                    print(f"Decreased key {key} -> {new_key}")
+                    bh.print_heap()
+            case "6":
+                key = int(input("Enter key to delete: "))
+                node = bh.find(key)
+                if node:
+                    bh.delete(node)
+                    if key in nodes:
+                        del nodes[key]
+                    print("Deleted", key)
+                    bh.print_heap()
+                else:
+                    print("Key not found")  
+            case "7":
+                print("Exiting")
+                break
+            case _:
+                print("Invalid choice")
