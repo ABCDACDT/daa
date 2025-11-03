@@ -1,0 +1,135 @@
+import matplotlib.pyplot as plt
+import random
+import time
+import numpy as np
+
+def bubble_iter(arr):
+    n = len(arr)
+    for i in range(n-1):
+        for j in range(n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+
+def bubble_rec(arr, n):
+    if n == 1:
+        return
+    for i in range(n-1):
+        if arr[i] > arr[i+1]:
+            arr[i], arr[i+1] = arr[i+1], arr[i]
+    bubble_rec(arr, n-1)
+
+def insertion_iter(arr):
+    n = len(arr)
+    for i in range(1, n):
+        key = arr[i]
+        j = i-1
+        while j >= 0 and arr[j] > key:
+            arr[j+1] = arr[j]
+            j -= 1
+        arr[j+1] = key
+
+def insertion_rec(arr, n):
+    if n <= 1:
+        return
+    insertion_rec(arr, n-1)
+    last = arr[n-1]
+    j = n-2
+    while j >= 0 and arr[j] > last:
+        arr[j+1] = arr[j]
+        j -= 1
+    arr[j+1] = last
+
+def selection_iter(arr):
+    n = len(arr)
+    for i in range(n-1):
+        min_idx = i
+        for j in range(i+1, n):
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        arr[i], arr[min_idx] = arr[min_idx], arr[i]
+
+def selection_rec(arr, start):
+    n = len(arr)
+    if start >= n-1:
+        return
+    min_idx = start
+    for i in range(start+1, n):
+        if arr[i] < arr[min_idx]:
+            min_idx = i
+    arr[start], arr[min_idx] = arr[min_idx], arr[start]
+    selection_rec(arr, start+1)
+
+max_size = int(input("Enter maximum array size: "))
+step = max_size // 20
+sizes = list(range(100, max_size+1, step))
+
+bubble_iter_times = []
+bubble_rec_times = []
+insertion_iter_times = []
+insertion_rec_times = []
+selection_iter_times = []
+selection_rec_times = []
+
+for sz in sizes:
+    arr = [random.randint(1, 100000) for _ in range(sz)]
+
+    arr_bi = arr.copy()
+    t0 = time.perf_counter()
+    bubble_iter(arr_bi)
+    t1 = time.perf_counter()
+    bubble_iter_times.append((t1-t0)*1000)
+
+    arr_br = arr.copy()
+    t0 = time.perf_counter()
+    bubble_rec(arr_br, len(arr_br))
+    t1 = time.perf_counter()
+    bubble_rec_times.append((t1-t0)*1000)
+
+    arr_ii = arr.copy()
+    t0 = time.perf_counter()
+    insertion_iter(arr_ii)
+    t1 = time.perf_counter()
+    insertion_iter_times.append((t1-t0)*1000)
+
+    arr_ir = arr.copy()
+    t0 = time.perf_counter()
+    insertion_rec(arr_ir, len(arr_ir))
+    t1 = time.perf_counter()
+    insertion_rec_times.append((t1-t0)*1000)
+
+    arr_si = arr.copy()
+    t0 = time.perf_counter()
+    selection_iter(arr_si)
+    t1 = time.perf_counter()
+    selection_iter_times.append((t1-t0)*1000)
+
+    arr_sr = arr.copy()
+    t0 = time.perf_counter()
+    selection_rec(arr_sr, 0)
+    t1 = time.perf_counter()
+    selection_rec_times.append((t1-t0)*1000)
+
+plt.figure(figsize=(10,6))
+
+def plot_smoothed(xs, ys, label):
+    xs_arr = np.array(xs)
+    ys_arr = np.array(ys)
+    coef = np.polyfit(xs_arr, ys_arr, 2)
+    xs_smooth = np.linspace(xs_arr.min(), xs_arr.max(), 300)
+    ys_smooth = np.polyval(coef, xs_smooth)
+    plt.plot(xs_smooth, ys_smooth, label=label)
+
+plot_smoothed(sizes, bubble_iter_times, "Bubble Iterative")
+plot_smoothed(sizes, bubble_rec_times, "Bubble Recursive")
+plot_smoothed(sizes, insertion_iter_times, "Insertion Iterative")
+plot_smoothed(sizes, insertion_rec_times, "Insertion Recursive")
+plot_smoothed(sizes, selection_iter_times, "Selection Iterative")
+plot_smoothed(sizes, selection_rec_times, "Selection Recursive")
+
+plt.xlabel("Array Size")
+plt.ylabel("Time (ms)")
+plt.title("Iterative vs Recursive Sorting Algorithms (Quadratic Fits)")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()

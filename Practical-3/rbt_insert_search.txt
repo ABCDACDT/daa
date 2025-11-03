@@ -1,0 +1,135 @@
+class Node:
+    def _init_(self, data, color='red'):
+        self.data = data
+        self.color = color
+        self.parent = None
+        self.left = None
+        self.right = None
+
+class RedBlackTree:
+    def _init_(self):
+        self.NIL = Node(0, color='black')  
+        self.root = self.NIL
+
+    def search(self, key):
+        return self._search_tree(self.root, key)
+
+    def _search_tree(self, node, key):
+        if node == self.NIL or key == node.data:
+            return node
+        if key < node.data:
+            return self._search_tree(node.left, key)
+        else:
+            return self._search_tree(node.right, key)
+
+    def left_rotate(self, x):
+        y = x.right
+        x.right = y.left
+        if y.left != self.NIL:
+            y.left.parent = x
+        y.parent = x.parent
+        if x.parent == None:
+            self.root = y
+        elif x == x.parent.left:
+            x.parent.left = y
+        else:
+            x.parent.right = y
+        y.left = x
+        x.parent = y
+
+    def right_rotate(self, y):
+        x = y.left
+        y.left = x.right
+        if x.right != self.NIL:
+            x.right.parent = y
+        x.parent = y.parent
+        if y.parent == None:
+            self.root = x
+        elif y == y.parent.right:
+            y.parent.right = x
+        else:
+            y.parent.left = x
+        x.right = y
+        y.parent = x
+
+    def insert(self, key):
+        node = Node(key)
+        node.left = self.NIL
+        node.right = self.NIL
+
+        y = None
+        x = self.root
+
+        while x != self.NIL:
+            y = x
+            if node.data < x.data:
+                x = x.left
+            else:
+                x = x.right
+
+        node.parent = y
+        if y == None:
+            self.root = node
+        elif node.data < y.data:
+            y.left = node
+        else:
+            y.right = node
+
+        node.color = 'red'
+        self.fix_insert(node)
+
+    def fix_insert(self, k):
+        while k.parent != None and k.parent.color == 'red':
+            if k.parent == k.parent.parent.left:
+                u = k.parent.parent.right  
+                if u.color == 'red':
+                    # Case 1: recolor
+                    k.parent.color = 'black'
+                    u.color = 'black'
+                    k.parent.parent.color = 'red'
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.right:
+                        # Case 2: left rotate
+                        k = k.parent
+                        self.left_rotate(k)
+                    # Case 3: right rotate
+                    k.parent.color = 'black'
+                    k.parent.parent.color = 'red'
+                    self.right_rotate(k.parent.parent)
+            else:
+                u = k.parent.parent.left  
+                if u.color == 'red':
+                    k.parent.color = 'black'
+                    u.color = 'black'
+                    k.parent.parent.color = 'red'
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.left:
+                        k = k.parent
+                        self.right_rotate(k)
+                    k.parent.color = 'black'
+                    k.parent.parent.color = 'red'
+                    self.left_rotate(k.parent.parent)
+        self.root.color = 'black'
+
+    def inorder_helper(self, node):
+        if node != self.NIL:
+            self.inorder_helper(node.left)
+            print(f'{node.data} ({node.color})', end=' ')
+            self.inorder_helper(node.right)
+
+    def inorder(self):
+        self.inorder_helper(self.root)
+        print()
+
+rbt = RedBlackTree()
+nums = [13, 3, 4, 12, 14, 10, 5, 1, 8, 2, 7, 9, 11, 6, 18]
+
+for n in nums:
+    rbt.insert(n)
+
+rbt.inorder()  
+
+node = rbt.search(45)
+print("Found:", node.data if node != rbt.NIL else "Not found")
